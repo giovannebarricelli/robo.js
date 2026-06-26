@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CENTRAL DE COMANDO PASTORAL</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; }
+        body { background: #000; color: #fff; overflow-x: hidden; }
+        .viewport { height: 100vh; overflow-y: auto; scroll-behavior: smooth; }
+
+        /* Estrutura de Páginas */
+        .section-base { height: 100vh; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; background-size: cover; background-position: center; }
+        .extensor { height: 30vh; background: #111; display: flex; justify-content: center; align-items: center; text-align: center; padding: 20px; font-style: italic; color: #aaa; border-top: 1px solid #333; border-bottom: 1px solid #333; }
+        
+        .snap-section { scroll-snap-align: start; }
+        .page1 { background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('foto2.jpg'); }
+        .page2 { background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('foto3.jpg'); }
+        .page3 { background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('foto4.jpg'); }
+        .page4 { background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('foto5.jpg'); }
+
+        .glass { background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 30px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); }
+        
+        /* Relógio e Controles */
+        #clock { font-size: 14rem; font-weight: 600; letter-spacing: -10px; line-height: 0.8; }
+        .controls { position: absolute; bottom: 60px; left: 60px; display: flex; gap: 30px; }
+        .lever { background: #fff; color: #000; padding: 20px 10px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        input[type=range] { appearance: slider-vertical; width: 4px; height: 150px; cursor: pointer; background: #000; }
+
+        /* Feed e Grid */
+        .container { width: 85%; max-width: 600px; padding: 40px; }
+        .msg { background: #fff; color: #000; padding: 15px 20px; border-radius: 15px; margin-bottom: 12px; font-weight: 700; font-size: 1.1rem; }
+        .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; width: 100%; }
+        .node { background: rgba(0,0,0,0.6); padding: 15px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-between; align-items: center; }
+        .status-btn { border: none; padding: 5px 12px; border-radius: 8px; font-weight: 900; font-family: monospace; color: white; cursor: pointer; }
+
+        /* Interruptor e Popup */
+        .switch { width: 280px; height: 100px; background: #b30000; border-radius: 50px; position: relative; cursor: pointer; border: 4px solid rgba(255,255,255,0.2); transition: 0.4s; }
+        .slider { width: 120px; height: 85px; background: #fff; border-radius: 50px; position: absolute; top: 3px; left: 5px; transition: 0.4s; }
+        .active { background: #22c55e; }
+        .active .slider { left: 150px; }
+        #qr-popup { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.9); z-index: 999; justify-content: center; align-items: center; }
+        .popup-content { background: #fff; padding: 30px; border-radius: 20px; color: #000; text-align: center; }
+    </style>
+</head>
+<body style="scroll-snap-type: y mandatory;">
+
+<div class="viewport">
+    <section class="section-base snap-section page1">
+        <div id="clock">00:00</div>
+        <div class="controls">
+            <div class="lever"><span>☀️</span><input type="range" min="0.3" max="1" step="0.1" value="1" oninput="document.body.style.filter='brightness('+this.value+')'"></div>
+            <div class="lever"><span>🔊</span><input type="range" min="0" max="1" step="0.1" value="0.5"></div>
+        </div>
+    </section>
+
+    <section class="extensor">"Lâmpada para os meus pés é tua palavra." (Salmos 119:105)</section>
+
+    <section class="section-base snap-section page2">
+        <h2 style="margin-bottom: 20px;">MENSAGENS RECENTES</h2>
+        <div class="container glass" id="feed"></div>
+    </section>
+
+    <section class="extensor">"O Senhor é o meu pastor." (Salmos 23:1)</section>
+
+    <section class="section-base snap-section page3">
+        <h2 style="margin-bottom: 20px; color: #fff;">DISPOSITIVOS</h2>
+        <div class="container glass grid" id="list"></div>
+    </section>
+
+    <section class="extensor">"Tudo posso naquele que me fortalece." (Filipenses 4:13)</section>
+
+    <section class="section-base free-section page4">
+        <div class="switch" onclick="this.classList.toggle('active')"><div class="slider"></div></div>
+        <p style="margin-top:20px; letter-spacing: 3px;">PROTOCOLO OPERACIONAL</p>
+    </section>
+</div>
+
+<div id="qr-popup" onclick="this.style.display='none'">
+    <div class="popup-content">
+        <h3 id="inst-title">CONECTAR INSTÂNCIA</h3>
+        <div style="margin:20px 0; padding:20px; background:#ddd; font-weight:bold;">[ QR CODE EVOLUTION ]</div>
+        <p>Aproxime o WhatsApp para conectar.</p>
+    </div>
+</div>
+
+<script>
+    // Relógio
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+    }, 1000);
+
+    // Feed com frases específicas
+    const frases = ["Pastora, preciso de um conselho.", "Pastora, ora pelo meu pai.", "Meu marido saiu de casa, me ajude.", "Pastora, ore por mim.", "Deus abençoe seu ministério."];
+    setInterval(() => {
+        const feed = document.getElementById('feed');
+        if (feed.children.length >= 7) feed.removeChild(feed.lastChild);
+        const d = document.createElement('div'); d.className = 'msg';
+        d.innerText = frases[Math.floor(Math.random() * frases.length)];
+        feed.prepend(d);
+    }, 4000);
+
+    // Grid Dispositivos
+    const list = document.getElementById('list');
+    for(let i=1; i<=9; i++) {
+        const isOffline = Math.random() > 0.5;
+        list.innerHTML += `
+            <div class="node">
+                INST_0${i} 
+                <button class="status-btn" style="background:${isOffline ? 'red' : 'green'}" 
+                onclick="${isOffline ? `showQR('INST_0${i}')` : ''}">${Math.floor(1000 + Math.random()*9000)}</button>
+            </div>`;
+    }
+
+    function showQR(name) {
+        document.getElementById('inst-title').innerText = "CONECTAR " + name;
+        document.getElementById('qr-popup').style.display = 'flex';
+    }
+</script>
+</body>
+</html>
