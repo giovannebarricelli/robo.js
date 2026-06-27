@@ -75,7 +75,11 @@
         const list = document.getElementById('list');
         for (const inst of instancias) {
             try {
-                const res = await fetch(`${API_URL}/instance/connectionState/${inst}`, { headers: { 'apikey': API_KEY } });
+                // Requisição com cache forçado para evitar estados antigos
+                const res = await fetch(`${API_URL}/instance/connectionState/${inst}`, { 
+                    headers: { 'apikey': API_KEY },
+                    cache: 'no-store' 
+                });
                 const data = await res.json();
                 const isOnline = data.instance?.state === 'open';
                 
@@ -87,7 +91,7 @@
                     list.appendChild(el);
                 }
                 el.innerHTML = `${inst.split('_')[1]} <button class="status-btn" style="background:${isOnline ? '#22c55e' : '#ef4444'}" onclick="iniciarConexao(this, '${inst}')">${isOnline ? 'ONLINE' : 'SCAN'}</button>`;
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Erro status:", e); }
         }
     }
 
@@ -96,17 +100,21 @@
         btn.style.background = "#f59e0b";
         
         try {
-            const res = await fetch(`${API_URL}/instance/connect/${inst}`, { headers: { 'apikey': API_KEY } });
+            // Tenta conectar, ignorando cache de rede
+            const res = await fetch(`${API_URL}/instance/connect/${inst}`, { 
+                headers: { 'apikey': API_KEY },
+                cache: 'no-cache'
+            });
             const data = await res.json();
             
             if (data.base64) {
                 const win = window.open("", "_blank", "width=400,height=400");
-                win.document.write(`<img src="${data.base64}" style="width:100%"><p>Escaneie rápido!</p>`);
+                win.document.write(`<img src="${data.base64}" style="width:100%"><p style="text-align:center;">Escaneie rápido!</p>`);
             } else {
-                alert("Instância ocupada ou já conectada.");
+                alert("Aviso: " + (data.message || "Instância ocupada."));
             }
         } catch (e) {
-            alert("Erro ao conectar.");
+            alert("Erro de conexão (CORS/Rede). Tente aba anônima ou verifique o Wi-Fi.");
         }
         btn.innerText = "SCAN";
         btn.style.background = "#ef4444";
